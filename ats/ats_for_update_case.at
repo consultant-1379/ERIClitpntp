@@ -1,0 +1,23 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# create ntp service
+litp create -t ntp-service -p /software/items/ntp1
+litp create -t ntp-server  -p /software/items/ntp1/servers/server0 -o server=0.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp1/servers/server1 -o server=1.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp1/servers/server2 -o server=2.us.pool.ntp.org
+
+#link ntp-service on MS and Managed nodes
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 -s /software/items/ntp1
+litp inherit -p /ms/items/ntp1 -s /software/items/ntp1
+
+#check server property is initially set to server=0.us.pool.ntp.org
+assertProperty /software/items/ntp1/servers/server0 -o server=0.us.pool.ntp.org
+
+litp create_plan
+litp run_plan
+
+#now update a property of the ntp-server item type
+litp update -p /software/items/ntp1/servers/server0 -o server=0.murphy.karl.ntp.org
+
+#check that this update has been implemented
+assertProperty /software/items/ntp1/servers/server0 -o server=0.murphy.karl.ntp.org

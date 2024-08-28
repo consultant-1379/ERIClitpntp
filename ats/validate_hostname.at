@@ -1,0 +1,6 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# create ntp service
+litp create -t ntp-service -p /software/items/ntp1
+# Dunno about this
+litp create -t ntp-server  -p /software/items/ntp1/servers/server0 -o server=300.122.123.2

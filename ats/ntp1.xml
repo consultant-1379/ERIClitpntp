@@ -1,0 +1,7 @@
+<litp:ntp-service xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"    xmlns:litp="http://www.ericsson.com/litp" xsi:schemaLocation="http://www.ericsson.com/litp litp-xml-schema/litp.xsd" version="LITP2" id="ntp1">
+    <litp:ntp-service-servers-collection id="servers">
+        <litp:ntp-server id="server1">
+            <server>10.10.10.1</server>
+        </litp:ntp-server>
+    </litp:ntp-service-servers-collection>
+</litp:ntp-service>

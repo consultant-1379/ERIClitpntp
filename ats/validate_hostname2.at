@@ -1,0 +1,8 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# create ntp service
+litp create -t ntp-service -p /software/items/ntp1
+
+let __err --err_type ValidationError --err_property server
+
+assertError __err create -t ntp-server  -p /software/items/ntp1/servers/server0 -o server="@www"

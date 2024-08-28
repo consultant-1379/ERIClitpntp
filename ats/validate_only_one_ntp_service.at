@@ -1,0 +1,31 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# create ntp service
+litp create -t ntp-service -p /software/items/ntp1
+litp create -t ntp-server  -p /software/items/ntp1/servers/server0 -o server=0.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp1/servers/server1 -o server=1.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp1/servers/server2 -o server=2.us.pool.ntp.org
+
+#link ntp-service on MS and Managed nodes
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 -s /software/items/ntp1
+litp inherit -p /ms/items/ntp1 -s /software/items/ntp1
+
+# create a duplicate ntp service
+litp create -t ntp-service -p /software/items/ntp2
+litp create -t ntp-server  -p /software/items/ntp2/servers/server0 -o server=0.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp2/servers/server1 -o server=1.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp2/servers/server2 -o server=2.us.pool.ntp.org
+
+litp create_plan
+litp run_plan
+
+# link the duplicate ntp-service on Managed node
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp2 -s /software/items/ntp2
+
+# plan should fail
+assertError create_plan
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 Applied
+
+# but if another ntp service is linked then things should be ok
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1
+litp create_plan

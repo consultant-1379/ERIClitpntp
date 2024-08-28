@@ -1,0 +1,74 @@
+runLitpScript two-node-std.inc
+
+# create ntp service
+litp create -t ntp-service -p /software/items/ntp-server-ipv6
+
+# All valid IPv6 addresses
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server0 -o server="2001::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server1 -o server="2001:20::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server2 -o server="2001:db8::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server3 -o server="2002::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server4 -o server="fe80::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server5 -o server="fc00::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server6 -o server="ff00::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server7 -o server="::ffff:0.0.0.0 "
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server8 -o server="::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server9 -o server="100::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server10 -o server="64:ff9b::0.0.0.0"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server11 -o server="fdd0::"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server12 -o server="2001:1b70:6207:5f:0:4024:0:1"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server13 -o server="2001:1b70:6207:5f:0:4024:5621:2f"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server14 -o server="fdde:4d7e:d471:1::835:90:103"
+litp create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/server15 -o server="fdde:4d7e:d471:1::835:90:103/64"
+
+# Inherit ntp-service on MS and node1
+litp inherit -p /ms/items/ntp-server-ipv6 -s /software/items/ntp-server-ipv6
+litp inherit -p /deployments/site1/clusters/cluster1/nodes/node1/items/ntp-server-ipv6 -s /software/items/ntp-server-ipv6
+
+litp create_plan
+litp run_plan
+
+# Assert states are Applied
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/ntp-server-ipv6 Applied
+assertState -p /ms/items/ntp-server-ipv6 Applied
+
+# Verify that an IPv6 address can be updated to another IPv6 address
+litp update -p /software/items/ntp-server-ipv6/servers/server0 -o server="2001:1b70:6207:5f:0:4024:6666:2a"
+litp update -p /software/items/ntp-server-ipv6/servers/server15 -o server="fdde:4d7e:d471:1::835:90:103/128"
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/ntp-server-ipv6/servers/server0 Updated
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/ntp-server-ipv6/servers/server15 Updated
+
+# Verify that an IPv6 address can be updated to IPv4 address
+litp update -p /software/items/ntp-server-ipv6/servers/server1 -o server=10.0.22.11
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/ntp-server-ipv6/servers/server1 Updated
+
+# Verify that an IPv4 address can be updated to IPv6 address
+litp create -t ntp-server -p /software/items/ntp-server-ipv6/servers/serveripv4 -o server="172.16.30.2"
+assertState -p /software/items/ntp-server-ipv6/servers/serveripv4 Initial
+litp create_plan
+litp run_plan
+assertState -p /software/items/ntp-server-ipv6/servers/serveripv4 Applied
+litp update -p /software/items/ntp-server-ipv6/servers/serveripv4 -o server="2001:1b70:6207:5f:0:4024:5644:2e"
+assertState -p /software/items/ntp-server-ipv6/servers/serveripv4 Updated
+
+# ValidationError
+let __err_v1 --err_type ValidationError --err_property server --err_message "The property 'server' has incorrect format"
+assertError __err_v1 create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/serverX -o server="2001:::"
+assertError __err_v1 create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/serverX -o server="hhh:hdhs:0000:45"
+let __err_v2 --err_type ValidationError --err_property server --err_message "Invalid value ''"
+assertError __err_v2 create -t ntp-server -p /software/items/ntp-server-ipv6/servers/serverX -o server=""
+
+# MissingRequiredPropertyError
+let __err_m1 --err_type MissingRequiredPropertyError --err_property server --err_message 'ItemType "ntp-server" is required to have a property with name "server"'
+assertError __err_m1 create -t ntp-server  -p /software/items/ntp-server-ipv6/servers/serverX
+
+# Remove ntp server
+litp remove -p /software/items/ntp-server-ipv6
+assertState -p /deployments/site1/clusters/cluster1/nodes/node1/items/ntp-server-ipv6 ForRemoval
+assertState -p /ms/items/ntp-server-ipv6 ForRemoval
+
+litp create_plan
+litp run_plan
+
+assertNone -p /software/items/ntp-server-ipv6
+assertNone -p /ms/items/ntp-server-ipv6

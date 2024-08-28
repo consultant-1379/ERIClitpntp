@@ -1,0 +1,32 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# create ntp service
+litp create -t ntp-service -p /software/items/ntp1
+litp create -t ntp-service -p /software/items/ntp2
+
+litp create -t ntp-server  -p /software/items/ntp1/servers/server0 -o server=0.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp2/servers/server0 -o server=123.23.3.0
+
+#link ntp-service on MS and Managed nodes
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 -s /software/items/ntp1
+litp inherit -p /ms/items/ntp1 -s /software/items/ntp1
+
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1
+
+litp create_plan
+assertTaskInPlan ntpd::config /deployments/local/clusters/cluster1/nodes/node1/items/ntp1
+litp run_plan
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 -s /software/items/ntp1
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp2 -s /software/items/ntp2
+litp create_plan
+assertTaskInPlan ntpd::config /deployments/local/clusters/cluster1/nodes/node1/items/ntp2
+assertNoConfigTask node1 ntpd::config /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 servers='[]'
+litp run_plan

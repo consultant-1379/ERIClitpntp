@@ -1,0 +1,24 @@
+runLitpScript 2_node_cluster_setup.inc
+
+litp create -t ntp-service -p /software/items/ntp1
+litp create -t ntp-service -p /software/items/ntp2
+
+litp create -t ntp-server  -p /software/items/ntp1/servers/server0 -o server=0.us.pool.ntp.org
+litp create -t ntp-server  -p /software/items/ntp2/servers/server0 -o server=123.23.3.0
+
+#link ntp-service on MS and Managed nodes
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1 -s /software/items/ntp1
+
+litp create_plan
+litp run_plan
+
+litp remove -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/ntp2 -s /software/items/ntp2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/ntp2 -s /software/items/ntp2
+litp create_plan
+
+# get ntp2 in state Applied and ntp1 in state ForRemoval
+failConfigTask ntpd::config node2 /deployments/local/clusters/cluster1/nodes/node2/items/ntp2
+litp run_plan
+
+litp create_plan
